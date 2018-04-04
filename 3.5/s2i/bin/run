@@ -1,6 +1,6 @@
 #!/bin/bash
 source /opt/app-root/etc/generate_container_user
-
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 set -e
 
 function is_gunicorn_installed() {
@@ -60,8 +60,11 @@ APP_HOME=${APP_HOME:-.}
 # Look for 'manage.py' in the directory specified by APP_HOME, or the current direcotry
 manage_file=$APP_HOME/manage.py
 
+
 if should_migrate; then
   if [[ -f "$manage_file" ]]; then
+    echo "---> Make migrations ..."
+    python "$manage_file" makemigrations
     echo "---> Migrating database ..."
     python "$manage_file" migrate --noinput
   else
@@ -88,6 +91,9 @@ if is_gunicorn_installed; then
     exec gunicorn "$APP_MODULE" --bind=0.0.0.0:8080 --access-logfile=- --config "$APP_CONFIG"
   fi
 fi
+
+
+exec nohup celery -A oam worker -l info &
 
 if is_django_installed; then
   if [[ -f "$manage_file" ]]; then

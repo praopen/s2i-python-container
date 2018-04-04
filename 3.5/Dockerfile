@@ -13,7 +13,7 @@ ENV PYTHON_VERSION=3.5 \
     PIP_NO_CACHE_DIR=off
 
 ENV SUMMARY="Platform for building and running Python $PYTHON_VERSION applications" \
-    DESCRIPTION="Python $PYTHON_VERSION available as container is a base platform for \
+    DESCRIPTION="Python $PYTHON_VERSION available as docker container is a base platform for \
 building and running various Python $PYTHON_VERSION applications and frameworks. \
 Python is an easy to learn, powerful programming language. It has efficient high-level \
 data structures and a simple but effective approach to object-oriented programming. \
@@ -45,6 +45,41 @@ RUN yum install -y centos-release-scl-rh && \
     rpm -e --nodeps centos-logos && \
     yum clean all -y
 
+RUN yum install libproj-devel binutils make geos-devel
+RUN wget http://download.osgeo.org/gdal/1.11.2/gdal-1.11.2.tar.gz && \
+    tar xzf gdal-1.11.2.tar.gz && \
+    cd gdal-1.11.2 && \
+    ./configure && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf gdal*
+
+RUN wget http://download.osgeo.org/geos/geos-3.4.2.tar.bz2 && \
+    tar xjf geos-3.4.2.tar.bz2 && \
+    cd geos-3.4.2 && \
+    ./configure && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf geos*
+
+RUN wget http://download.osgeo.org/proj/proj-4.9.3.tar.gz \
+    && tar -xvf proj-4.9.3.tar.gz \
+    && cd proj-4.9.3 \
+    && ./configure \
+    && make -j4\
+    && make install && \
+    cd .. && \
+    rm -rf proj*
+
+RUN ldconfig
+    
+
+RUN cp -r /usr/local/lib/* /opt/rh/rh-python35/root/usr/lib64/.
+RUN yum install -y gcc binutils
+#RUN yum install -y epel-release && yum install -y postgis2_94
+#RUN pip install Shapely==1.6.3
 # Copy the S2I scripts from the specific language image to $STI_SCRIPTS_PATH.
 COPY ./s2i/bin/ $STI_SCRIPTS_PATH
 
@@ -60,8 +95,9 @@ COPY ./root/ /
 RUN source scl_source enable rh-python35 && \
     virtualenv ${APP_ROOT} && \
     chown -R 1001:0 ${APP_ROOT} && \
-    fix-permissions ${APP_ROOT} -P && \
-    rpm-file-permissions
+    fix-permissions ${APP_ROOT} && \
+    rpm-file-permissions && \
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
 USER 1001
 

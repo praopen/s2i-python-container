@@ -15,7 +15,6 @@ function should_collectstatic() {
 # (pip script installer).
 function install_pipenv() {
   echo "---> Installing pipenv packaging tool ..."
-  pip install -U virtualenv
   VENV_DIR=$HOME/.local/venvs/pipenv
   virtualenv $VENV_DIR
   $VENV_DIR/bin/pip --isolated install -U pipenv
@@ -40,11 +39,13 @@ if [[ ! -z "$ENABLE_PIPENV" ]]; then
   if [[ -f Pipfile ]]; then
     pipenv install --deploy
   elif [[ -f requirements.txt ]]; then
+    pipenv install --upgrade setuptools
     pipenv install -r requirements.txt
   fi
   pipenv check
 elif [[ -f requirements.txt ]]; then
   echo "---> Installing dependencies ..."
+  pip install --upgrade setuptools  
   pip install -r requirements.txt
 elif [[ -f setup.py ]]; then
   echo "---> Installing application ..."
